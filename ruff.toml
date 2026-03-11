@@ -2,54 +2,18 @@ line-length = 150
 
 [lint]
 select = [
-    "ALL", 
-    # Too many blank lines
-    "E303",
+    "E",   # базовые ошибки pycodestyle
+    "F",   # ошибки Pyflakes (неиспользуемые импорты, переменные и т.п.)
+    "B",   # частые баги (flake8-bugbear)
 ]
 
+# Игнорируем придирчивые правила
 ignore = [
-    # Missing docstring in public module
-    "D100",
-    # Missing docstring in public function
-    "D103",
-    # Missing docstring in public method
-    "D102",
-    # Missing docstring in public class
-    "D101",
-    # Missing docstring in `__init__` [D107]
-    "D107",
-    # https://docs.astral.sh/ruff/rules/blanket-type-ignore/
-    "PGH003",
-    # globals is discouraged
-    "PLW0603",
-    # f-strings in exception instantiation
-    "EM102",
-    # long exception messages not in class.
-    "TRY003",
-    # Move application import `collectors.activetcp.message.TCPMessage` into a type-checking block [TC001]
-    "TC001",
-    # Move standard library import `uuid.UUID` into a type-checking block [TC003]
-    "TC003",
-    # Missing author in TODO; try: `# TODO(<author_name>): ...` or `# TODO @<author_name>: ...` [TD002]
-    "TD002",
-    # Missing issue link for this TODO [TD003]
-    "TD003",
-    # File `src/cmd/tcp_client.py` is part of an implicit namespace package. Add an `__init__.py`. [INP001]
-    "INP001",
-    # `print` found [T201]
-    "T201",
-    # `.response.ReadUserResponse` imported but unused; consider removing, adding to `__all__`, or using a redundant alias [F401]
-    "F401",
-    # Line contains TODO, consider resolving the issue [FIX002]
-    "FIX002",
-    # Missing `from __future__ import annotations`, but uses PEP 604 union [FA102]
-    "FA102",
-    # String contains ambiguous `с` (CYRILLIC SMALL LETTER ES). Did you mean `c` (LATIN SMALL LETTER C)? [RUF001]
-    "RUF001",
-    # Docstring contains ambiguous `с` (CYRILLIC SMALL LETTER ES). Did you mean `c` (LATIN SMALL LETTER C)? [RUF002]
-    "RUF002",
+    "E501",  # длина строки (мы уже задали line-length)
 ]
 
+# Не ругаться на underscore переменные
+dummy-variable-rgx = "^_+$|^_.*"
 
 [format]
 quote-style = "double"
