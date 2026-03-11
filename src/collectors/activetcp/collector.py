@@ -10,6 +10,8 @@ from structlog.stdlib import BoundLogger
 from collectors.activetcp.message import TCPMessage
 from collectors.interface import MetricsCollector
 from entities.base_metric_entry import BaseMetricEntry
+from entities.metricvalue import MetricValue
+from in_memory_storage.storage import InMemoryStorage
 
 
 class ActiveTCPCollector(MetricsCollector):
@@ -36,13 +38,61 @@ class ActiveTCPCollector(MetricsCollector):
         self._stop_event = asyncio.Event()
         self._is_running = False
 
+        self._sent_packet = InMemoryStorage[datetime]()
+        self._latency_to_server = InMemoryStorage[float]()
+        self._latency_from_server = InMemoryStorage[float]()
+        self._rtt = InMemoryStorage[float]()
+
     @override
     async def collect(self, time: datetime) -> Iterable[BaseMetricEntry]:
-        return await super().collect(time)
+        rtt = MetricValue()
+        rtt.add_all(list(self._rtt.values()))
 
-    async def handle_received_packet(self, packet: dict) -> None:
+        latency_to_server = MetricValue()
+        latency_to_server.add_all(list(self._latency_to_server.values()))
+
+        latency_from_server = MetricValue()
+        latency_from_server.add_all(list(self._latency_from_server.values()))
+
+        return [
+            BaseMetricEntry(
+                origin=self.__class__.__name__,
+                timestamp=datetime.now().timestamp(),
+                destinatation=self._addr,
+                rtt=rtt,
+                latency_from=latency_from_server,
+                latency_to=latency_to_server,
+                packet_loss=None,
+            )
+        ]
+
+    async def handle_received_packet(self, packet: TCPMessage) -> None:
         """Обработка входящего пакета"""
-        self._logger.debug("Received packet", packet=packet)
+        log = self._logger.bind(action="handle_received_packet", packet=packet)
+        message_id = packet["reply_to"]
+
+        if message_id is None:
+            log.error("packet from server without message_id")
+            return
+
+        now = datetime.now()
+
+        sent_to_at = self._sent_packet.get(message_id)
+        if sent_to_at is None:
+            log.warning("sent_to timestamp not found")
+            return
+
+        sent_from_at = datetime.fromtimestamp(packet["sent_at"])
+
+        latency_from_server = now - sent_from_at
+        latency_to_server = sent_from_at - sent_to_at
+        rtt = latency_from_server + latency_to_server
+
+        log.debug("calculated metrics", rtt=rtt, latency_from_server=latency_from_server, latency_to_server=latency_to_server)
+
+        self._rtt.add(message_id, rtt.total_seconds(), self._metrics_interval)
+        self._latency_from_server.add(message_id, latency_from_server.total_seconds(), self._metrics_interval)
+        self._latency_to_server.add(message_id, latency_to_server.total_seconds(), self._metrics_interval)
 
     async def send_messages_loop(self, writer: asyncio.StreamWriter) -> None:
         """Цикл отправки сообщений"""
@@ -55,12 +105,14 @@ class ActiveTCPCollector(MetricsCollector):
                 "additioinal_data": None,
             }
 
+            self._sent_packet.add(msg["message_id"], datetime.now(), self._read_timeout + self._write_timeout)
+
             try:
                 packed: bytes = msgpack.packb(msg)  # type: ignore
                 writer.write(packed)
                 await asyncio.wait_for(writer.drain(), self._write_timeout.total_seconds())
 
-                log.info("Sent TCP message", message_id=msg["message_id"])
+                log.debug("Sent TCP message", message_id=msg["message_id"])
             except Exception as e:
                 log.exception("Failed to send message", error=e)
                 raise e

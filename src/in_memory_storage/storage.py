@@ -8,8 +8,11 @@ class Entry[T]:
     created_at: datetime
     value: T
 
+
 class InMemoryStorage[T]:
-    """Key Value хранилище с поддержкой TTL"""
+    """Key Value хранилище с поддержкой TTL.
+
+    Все значения, которые истекли по TTL, считаются несуществующими."""
 
     def __init__(self) -> None:
         self._storage: dict[str, Entry[T]] = {}
@@ -44,7 +47,21 @@ class InMemoryStorage[T]:
 
         return val.value
 
+    def values(self):
+        """Получить все значения."""
+        for key in list(self._storage):
+            value = self.get(key)
+
+            if value is not None:
+                yield value
+
     def clear_expired(self) -> None:
         """Удалить все записи, у которых вышло время жизни"""
-        for key in list(self._storage.keys()):
-            self.get(key)
+        for _ in self.values():
+            pass
+
+    def __getitem__(self, key: str) -> T:
+        value = self.get(key)
+        if value is None:
+            raise KeyError(key)
+        return value
