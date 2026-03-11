@@ -43,7 +43,11 @@ ignore = [
     # Line contains TODO, consider resolving the issue [FIX002]
     "FIX002",
     # Missing `from __future__ import annotations`, but uses PEP 604 union [FA102]
-    "FA102"
+    "FA102",
+    # String contains ambiguous `с` (CYRILLIC SMALL LETTER ES). Did you mean `c` (LATIN SMALL LETTER C)? [RUF001]
+    "RUF001",
+    # Docstring contains ambiguous `с` (CYRILLIC SMALL LETTER ES). Did you mean `c` (LATIN SMALL LETTER C)? [RUF002]
+    "RUF002",
 ]
 
 

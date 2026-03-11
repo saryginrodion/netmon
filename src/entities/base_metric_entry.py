@@ -8,9 +8,11 @@ class BaseMetricEntry:
     """Базовый датакласс для собранных метрик с коллектора."""
 
     origin: str
+    """Источник (название коллектора), с которого пришла метрика."""
     timestamp: float
+    """POSIX timestamp в секундах"""
     destinatation: str
-    port: int
+    """IP сервера, запросы к которому измерялись"""
 
     rtt: MetricValue | None
     latency_from: MetricValue | None
