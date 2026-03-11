@@ -1,21 +1,24 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"fmt"
+	"encoding/gob"
 	"log/slog"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/saryginrodion/netmon/internal/collectors/activetcp"
 )
 
 const LISTEN_ADDR string = ":8001"
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
+		Level: slog.LevelInfo,
 	}))
 	log.WithGroup("tcp-server")
 
@@ -79,18 +82,30 @@ func handleConn(logger *slog.Logger, conn net.Conn) {
 
 	log.Debug("starting connection handling")
 
-	reader := bufio.NewReader(conn)
+	enc := gob.NewEncoder(conn)
+	dec := gob.NewDecoder(conn)
 
 	for {
-		s, err := reader.ReadString(byte('\n'))
+		request := &activetcp.TCPMessage{}
+		err := dec.Decode(request)
 		if err != nil {
 			log.Warn("failed to read next line", "err", err)
 			break
 		}
 
-		log.Info("received message", "message", s)
+		log.Info(
+			"received message", 
+			"message", request,
+		)
 
-		_, err = fmt.Fprintf(conn, "ACK: %s", s)
+		response := activetcp.TCPMessage{
+			MessageID: uuid.New(),
+			ReplyTo:   &request.MessageID,
+			Timestamp: time.Now(),
+			Data:      map[string]any{},
+		}
+
+		err = enc.Encode(response)
 		if err != nil {
 			log.Warn("failed to send ACK", "err", err)
 			break

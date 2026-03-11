@@ -15,42 +15,28 @@ import (
 	"github.com/saryginrodion/netmon/internal/collectors/activetcp"
 )
 
-const CONNECTION_ADDR = "localhost:8001"
-const PACKET_RATE = time.Second / 1000
-const WINDOW_INTERVAL = time.Second * 30
-
 type TypeWithAriphmeticOperations interface {
 	~int | ~uint | ~float32 | ~float64 | ~int64
 }
 
-type AggregatedValue[T TypeWithAriphmeticOperations] struct {
-	Count    int
-	AccValue T
-	Max      T
-	Min      T
+type AggregatedAriphmeticOpsMetric[T TypeWithAriphmeticOperations] struct {
+	count    int
+	accValue T
 }
 
-func (am *AggregatedValue[T]) Add(val T) {
-	am.Count++
-	am.AccValue += val
-
-	if am.Max < val || am.Count == 1 {
-		am.Max = val
-	}
-
-	if am.Min > val || am.Count == 1 {
-		am.Min = val
-	}
+func (am *AggregatedAriphmeticOpsMetric[T]) Add(dur T) {
+	am.count++
+	am.accValue += dur
 }
 
-func (am *AggregatedValue[T]) Value() T {
-	return am.AccValue / T(am.Count)
+func (am *AggregatedAriphmeticOpsMetric[T]) Value() T {
+	return am.accValue / T(am.count)
 }
 
 type AggregatedMetrics struct {
-	rtt        AggregatedValue[time.Duration]
-	toServer   AggregatedValue[time.Duration]
-	fromServer AggregatedValue[time.Duration]
+	rtt        AggregatedAriphmeticOpsMetric[time.Duration]
+	toServer   AggregatedAriphmeticOpsMetric[time.Duration]
+	fromServer AggregatedAriphmeticOpsMetric[time.Duration]
 }
 
 type MetricEntry struct {
@@ -77,12 +63,12 @@ func (m *Metrics) Calculate(now time.Time, dur time.Duration) AggregatedMetrics 
 	m.Unlock()
 
 	aggregatedMetrics := AggregatedMetrics{
-		rtt:        AggregatedValue[time.Duration]{},
-		toServer:   AggregatedValue[time.Duration]{},
-		fromServer: AggregatedValue[time.Duration]{},
+		rtt:        AggregatedAriphmeticOpsMetric[time.Duration]{},
+		toServer:   AggregatedAriphmeticOpsMetric[time.Duration]{},
+		fromServer: AggregatedAriphmeticOpsMetric[time.Duration]{},
 	}
 
-	for i := len(entries) - 1; i >= 0; i-- {
+	for i := len(entries); i >= 0; i-- {
 		entry := entries[i]
 		if now.Add(-dur).After(entry.time) {
 			break
@@ -100,7 +86,7 @@ func (m *Metrics) DeleteOld(now time.Time, dur time.Duration) {
 	m.Lock()
 	defer m.Unlock()
 
-	for i := len(m.entries) - 1; i >= 0; i-- {
+	for i := len(m.entries); i >= 0; i-- {
 		entry := m.entries[i]
 		if now.Add(-dur).After(entry.time) {
 			m.entries = m.entries[i+1 : len(m.entries)]
@@ -108,6 +94,9 @@ func (m *Metrics) DeleteOld(now time.Time, dur time.Duration) {
 		}
 	}
 }
+
+const CONNECTION_ADDR = "localhost:8001"
+const PACKET_RATE = time.Second / 100
 
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -131,8 +120,6 @@ func main() {
 		log := log.With("scope", "connectionHandleLoop")
 		go handleConn(ctx, log, conn, &metrics)
 	}()
-
-	go startPrintingMetrics(ctx, log, &metrics, WINDOW_INTERVAL)
 
 	// Graceful shutdown
 	killSig := make(chan os.Signal, 1)
@@ -230,16 +217,9 @@ func startPrintingMetrics(ctx context.Context, logger *slog.Logger, metrics *Met
 
 		now := time.Now()
 		vals := metrics.Calculate(now, interval)
-		metrics.DeleteOld(now, interval)
 
 		log.Info("metrics",
-			"midRtt", vals.rtt.Value(),
-			"midToServer", vals.toServer.Value(),
-			"midFromServer", vals.fromServer.Value(),
-
-			"rtt", vals.rtt,
-			"toServer", vals.toServer,
-			"fromServer", vals.fromServer,
+			"rtt", vals.rtt.Value(),
 		)
 	}
 }
