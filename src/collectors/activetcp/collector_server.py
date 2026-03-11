@@ -35,8 +35,9 @@ class ActiveTCPServer(asyncio.Protocol):
                 unpacker.feed(data)
 
                 for request in unpacker:
+                    log.info("received message", message=request)
                     response: TCPMessage = {
-                        "message_id": uuid.uuid4(),
+                        "message_id": str(uuid.uuid4()),
                         "reply_to": request["message_id"],
                         "sent_at": datetime.now(tz=UTC).timestamp(),
                         "additioinal_data": None,
@@ -44,6 +45,7 @@ class ActiveTCPServer(asyncio.Protocol):
 
                     response_packed: bytes = msgpack.packb(response)  # type: ignore
                     writer.write(response_packed)
+                    log.info("wrote message", message=response)
 
                 await writer.drain()
 
