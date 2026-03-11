@@ -9,9 +9,9 @@ class MetricsRepository(ABC):
     """Репозиторий для сохранения метрик."""
 
     @abstractmethod
-    def save_metrics(self, metrics: Iterable[BaseMetricEntry]) -> None:
+    async def save_metrics(self, metrics: Iterable[BaseMetricEntry]) -> None:
         """Сохранить список метрик."""
 
     @abstractmethod
-    def metrics_in_interval(self, interval_start: datetime, interval_stop: datetime) -> Iterable[BaseMetricEntry]:
+    async def metrics_in_interval(self, interval_start: datetime, interval_stop: datetime) -> Iterable[BaseMetricEntry]:
         """Получить список метрик за выбранный период."""
