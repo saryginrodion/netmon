@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.entities.metricvalue import MetricValue
+from entities.metricvalue import MetricValue
 
 
 @dataclass

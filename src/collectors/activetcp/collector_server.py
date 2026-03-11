@@ -1,6 +1,5 @@
 import asyncio
 import uuid
-from asyncio import transports
 from datetime import UTC, datetime
 
 import msgpack
@@ -16,24 +15,25 @@ class ActiveTCPServer(asyncio.Protocol):
     """
 
     def __init__(self, logger: BoundLogger) -> None:
-        self._logger = logger.bind()
-
+        self._logger = logger
+        self._server = None
 
     async def handle_client(
         self,
         reader: asyncio.StreamReader,
         writer: asyncio.StreamWriter,
     ) -> None:
+        log = self._logger.bind(action="handle_client", trace_id=uuid.uuid4(), peername=writer.get_extra_info("peername"))
         unpacker = msgpack.Unpacker(raw=False)
-    
+
         try:
             while True:
                 data: bytes = await reader.read(4096)
                 if not data:
                     break
-    
+
                 unpacker.feed(data)
-    
+
                 for request in unpacker:
                     response: TCPMessage = {
                         "message_id": uuid.uuid4(),
@@ -41,15 +41,25 @@ class ActiveTCPServer(asyncio.Protocol):
                         "sent_at": datetime.now(tz=UTC).timestamp(),
                         "additioinal_data": None,
                     }
-    
+
                     response_packed: bytes = msgpack.packb(response)  # type: ignore
                     writer.write(response_packed)
-    
+
                 await writer.drain()
-    
+
         except Exception as e:
-            self._logger.exception("error while handling client", error=str(e))
-    
+            log.exception("error while handling client", error=str(e))
+
         finally:
             writer.close()
             await writer.wait_closed()
+
+    async def start_server(self, addr: str, port: int) -> None:
+        log = self._logger.bind(action="start_server", addr=addr, port=port)
+
+        try:
+            self._server = await asyncio.start_server(self.handle_client, addr, port)
+            log.info("server started")
+        except Exception as e:
+            log.exception("failed to start server", error=str(e))
+            raise e
