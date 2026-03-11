@@ -1,12 +1,17 @@
-import abc
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from datetime import datetime
 
 from entities.base_metric_entry import BaseMetricEntry
 
 
-class MetricsRepository(abc.ABC):
+class MetricsRepository(ABC):
     """Репозиторий для сохранения метрик."""
 
-    @abc.abstractmethod
+    @abstractmethod
     def save_metrics(self, metrics: Iterable[BaseMetricEntry]) -> None:
-        pass
+        """Сохранить список метрик."""
+
+    @abstractmethod
+    def metrics_in_interval(self, interval_start: datetime, interval_stop: datetime) -> Iterable[BaseMetricEntry]:
+        """Получить список метрик за выбранный период."""
