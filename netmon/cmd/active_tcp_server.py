@@ -2,7 +2,7 @@ import argparse
 import asyncio
 
 import structlog
-from collectors.activetcp.collector_server import ActiveTCPServer
+from netmon.collectors.activetcp.collector_server import ActiveTCPServer
 
 
 async def main() -> None:

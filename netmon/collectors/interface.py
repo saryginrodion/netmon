@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from datetime import datetime
 
-from entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.base_metric_entry import BaseMetricEntry
 
 
 class MetricsCollector(ABC):

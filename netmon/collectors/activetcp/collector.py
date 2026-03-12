@@ -7,11 +7,11 @@ from uuid import uuid4
 import msgpack
 from structlog.stdlib import BoundLogger
 
-from collectors.activetcp.message import TCPMessage
-from collectors.interface import MetricsCollector
-from entities.base_metric_entry import BaseMetricEntry
-from entities.metricvalue import MetricValue
-from in_memory_storage.storage import InMemoryStorage
+from netmon.collectors.activetcp.message import TCPMessage
+from netmon.collectors.interface import MetricsCollector
+from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metricvalue import MetricValue
+from netmon.in_memory_storage.storage import InMemoryStorage
 
 
 class ActiveTCPCollector(MetricsCollector):

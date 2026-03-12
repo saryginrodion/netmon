@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 import msgpack
 from structlog.stdlib import BoundLogger
 
-from collectors.activetcp.message import TCPMessage
+from netmon.collectors.activetcp.message import TCPMessage
 
 
 class ActiveTCPServer(asyncio.Protocol):

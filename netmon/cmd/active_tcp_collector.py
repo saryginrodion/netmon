@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import logging
 
 import structlog
-from collectors.activetcp.collector import ActiveTCPCollector
+from netmon.collectors.activetcp.collector import ActiveTCPCollector
 
 
 def setup_logging() -> None:

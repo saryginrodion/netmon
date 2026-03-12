@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from entities.metricvalue import MetricValue
+from netmon.entities.metricvalue import MetricValue
 
 
 @dataclass
