@@ -17,4 +17,4 @@ class BaseMetricEntry:
     rtt: MetricValue | None
     latency_from: MetricValue | None
     latency_to: MetricValue | None
-    packet_loss: MetricValue | None
+    packet_loss: float | None

@@ -55,6 +55,14 @@ class InMemoryStorage[T]:
             if value is not None:
                 yield value
 
+    def items(self):
+        """Получить пары ключей и значений."""
+        for key in list(self._storage):
+            value = self.get(key)
+
+            if value is not None:
+                yield key, value
+
     def clear_expired(self) -> None:
         """Удалить все записи, у которых вышло время жизни"""
         for _ in self.values():

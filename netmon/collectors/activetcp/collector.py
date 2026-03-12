@@ -62,9 +62,20 @@ class ActiveTCPCollector(MetricsCollector):
                 rtt=rtt,
                 latency_from=latency_from_server,
                 latency_to=latency_to_server,
-                packet_loss=None,
+                packet_loss=self._packet_loss(),
             )
         ]
+
+    def _packet_loss(self) -> float:
+        all_sent_packets = {k for k, _ in self._sent_packet.items()}
+        all_received_packets = {k for k, _ in self._rtt.items()}
+
+        lost_packet_ids = all_sent_packets - all_received_packets
+
+        if len(all_sent_packets) == 0:
+            return 0.0
+
+        return len(lost_packet_ids) / len(all_sent_packets)
 
     async def handle_received_packet(self, packet: TCPMessage) -> None:
         """Обработка входящего пакета"""
@@ -105,7 +116,7 @@ class ActiveTCPCollector(MetricsCollector):
                 "additioinal_data": None,
             }
 
-            self._sent_packet.add(msg["message_id"], datetime.now(), self._read_timeout + self._write_timeout)
+            self._sent_packet.add(msg["message_id"], datetime.now(), self._metrics_interval)
 
             try:
                 packed: bytes = msgpack.packb(msg)  # type: ignore
