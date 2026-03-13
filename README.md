@@ -18,8 +18,8 @@ uv run -m netmon.cmd.active_tcp_server --help
 ## ActiveTCPCollector
 Запуск единственного коллектора для активного TCP теста
 ```sh
-uv run -m netmon.cmd.active_tcp_server
+uv run -m netmon.cmd.active_tcp_collector
 
 # Вывод help описания
-uv run -m netmon.cmd.active_tcp_server --help
+uv run -m netmon.cmd.active_tcp_collector --help
 ```
