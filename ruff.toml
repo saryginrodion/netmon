@@ -1,3 +1,5 @@
+exclude = ["./tests"]
+
 line-length = 150
 
 [lint]
