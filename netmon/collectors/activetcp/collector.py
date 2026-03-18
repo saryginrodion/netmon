@@ -95,9 +95,9 @@ class ActiveTCPCollector(MetricsCollector):
             log.warning("sent_to timestamp not found")
             return
 
-        sent_from_at = datetime.fromtimestamp(packet["sent_at"])
+        # sent_from_at = datetime.fromtimestamp(packet["sent_at"])
 
-        rtt = now - sent_from_at
+        rtt = now - sent_to_at
         latency_from_server = rtt / 2
         latency_to_server = rtt / 2
 
