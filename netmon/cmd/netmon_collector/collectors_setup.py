@@ -10,14 +10,15 @@ async def _active_tcp_setup(conf: ActiveTCPConfig, netmon_conf: NetmonConfig) ->
     logger = structlog.get_logger().bind(scope=conf.type, addr=conf.addr, port=conf.port)
 
     collector = ActiveTCPCollector(
-        logger,
-        str(conf.addr),
-        conf.port,
-        netmon_conf.collect_interval,
-        conf.packet_send_delay,
-        conf.reconnect_interval,
-        conf.read_timeout,
-        conf.write_timeout,
+        logger=logger,
+        addr=str(conf.addr),
+        port=conf.port,
+        metrics_interval=netmon_conf.collect_interval,
+        packet_send_delay=conf.packet_send_delay,
+        reconnect_interval=conf.reconnect_interval,
+        read_timeout=conf.read_timeout,
+        write_timeout=conf.write_timeout,
+        origin_name=conf.origin_name,
     )
 
     await collector.start_collector()
@@ -28,12 +29,13 @@ async def _active_udp_setup(conf: ActiveUDPConfig, netmon_conf: NetmonConfig) ->
     logger = structlog.get_logger().bind(scope=conf.type, addr=conf.addr, port=conf.port)
 
     collector = ActiveUDPCollector(
-        logger,
-        str(conf.addr),
-        conf.port,
-        netmon_conf.collect_interval,
-        conf.packet_send_delay,
-        conf.read_timeout,
+        logger=logger,
+        addr=str(conf.addr),
+        port=conf.port,
+        metrics_interval=netmon_conf.collect_interval,
+        packet_send_delay=conf.packet_send_delay,
+        read_timeout=conf.read_timeout,
+        origin_name=conf.origin_name,
     )
 
     await collector.start_collector()

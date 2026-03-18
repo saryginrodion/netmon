@@ -12,6 +12,8 @@ class ActiveTCPConfig(BaseModel):
     read_timeout: timedelta = timedelta(seconds=10)
     write_timeout: timedelta = timedelta(seconds=10)
 
+    origin_name: str = "activetcp"
+
 
 class ActiveUDPConfig(BaseModel):
     type: Literal["activeudp"]
@@ -19,6 +21,8 @@ class ActiveUDPConfig(BaseModel):
     port: int = Field(gt=0, lt=65535)
     packet_send_delay: timedelta = Field(default=timedelta(seconds=0.1))
     read_timeout: timedelta = timedelta(seconds=10)
+
+    origin_name: str = "activeudp"
 
 
 CollectorConfig = Annotated[

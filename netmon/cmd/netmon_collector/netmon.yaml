@@ -10,10 +10,12 @@ storage:
 # Collectors. Can be multiple collectors of one kind - to test many servers at one run
 collectors:
   - type: activetcp
+    origin_name: localhost_activetcp  # You can setup custom origin names for collectors
     addr: 127.0.0.1
     port: 8001
     packet_send_delay: 0.1
   - type: activeudp
+    origin_name: localhost_activeudp
     addr: 127.0.0.1
     port: 8002
     packet_send_delay: 0.05
