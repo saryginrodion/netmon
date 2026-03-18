@@ -102,11 +102,11 @@ class ActiveUDPCollector(MetricsCollector):
             log.warning("sent_to timestamp not found")
             return
 
-        sent_from_at = datetime.fromtimestamp(packet["sent_at"])
+        # sent_from_at = datetime.fromtimestamp(packet["sent_at"])
 
-        latency_from_server = now - sent_from_at
-        latency_to_server = sent_from_at - sent_to_at
-        rtt = latency_from_server + latency_to_server
+        rtt = now - sent_to_at
+        latency_from_server = rtt / 2
+        latency_to_server = rtt / 2
 
         log.debug(
             "calculated metrics",
