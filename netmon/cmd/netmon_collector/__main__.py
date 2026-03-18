@@ -1,12 +1,16 @@
 import argparse
 import asyncio
+from datetime import datetime
 import shutil
 from pathlib import Path
 
 import structlog
 import yaml
 
+from netmon.cmd.netmon_collector.collectors_setup import setup_collectors
 from netmon.cmd.netmon_collector.configuration_model import NetmonConfig
+from netmon.cmd.netmon_collector.saver_setup import saver_setup
+from netmon.collectors.mergecollector.collector import MergeCollector
 from netmon.util.setup_logging import setup_logging
 
 _DEFAULT_CONFIG_NAME = "netmon.yaml"
@@ -54,7 +58,24 @@ async def main() -> None:
         config_dict = yaml.safe_load(f)
 
     config = NetmonConfig.model_validate(config_dict)  # type: ignore
-    logger.info("config parsed successfully", config=config)
+    logger.info("config parsed")
+
+    collectors = await setup_collectors(config)
+    merge_collector = MergeCollector(logger.bind(scope="MergeCollector"), collectors)
+    logger.info("collectors setup")
+
+    saver = await saver_setup(config.storage)
+    logger.info("metrics saver setup")
+
+    # TODO: Change to running MetricsAggregator
+    while True:
+        try:
+            metrics = list(await merge_collector.collect(datetime.now()))
+            await saver.save_metrics(metrics)
+            logger.info("collected metrics", entries_count=len(metrics))
+            await asyncio.sleep(config.collect_interval.total_seconds())
+        except Exception as e:
+            logger.exception("exception in collect and save loop", error=str(e))
 
 
 if __name__ == "__main__":
