@@ -3,9 +3,11 @@ import asyncio
 
 import structlog
 from netmon.collectors.activeudp.collector_server import ActiveUDPServer
+from netmon.util.setup_logging import setup_logging
 
 
 async def main() -> None:
+    setup_logging()
     logger = structlog.get_logger()
 
     parser = argparse.ArgumentParser(description="Active UDP Collector server")

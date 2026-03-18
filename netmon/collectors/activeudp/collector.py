@@ -24,6 +24,7 @@ class ActiveUDPCollector(MetricsCollector):
         metrics_interval: timedelta,
         packet_send_delay: timedelta = timedelta(seconds=5),
         read_timeout: timedelta = timedelta(seconds=10),
+        origin_name: str = "ActiveUDPCollector",
     ) -> None:
 
         self._logger = logger
@@ -32,6 +33,7 @@ class ActiveUDPCollector(MetricsCollector):
         self._port = port
         self._packet_send_delay = packet_send_delay
         self._read_timeout = read_timeout
+        self._origin_name = origin_name
 
         self._stop_event = asyncio.Event()
         self._is_running = False
@@ -58,7 +60,7 @@ class ActiveUDPCollector(MetricsCollector):
 
         return [
             BaseMetricEntry(
-                origin=self.__class__.__name__,
+                origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
                 destinatation=self._addr,
                 rtt=rtt,
