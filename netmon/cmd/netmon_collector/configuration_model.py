@@ -1,6 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from netmon.cmd.netmon_collector.collector_configuration_models import CollectorConfig
 
@@ -15,3 +15,5 @@ class NetmonConfig(BaseModel):
     storage: StorageConfig
 
     collectors: list[CollectorConfig]
+
+    model_config = ConfigDict(extra="ignore")

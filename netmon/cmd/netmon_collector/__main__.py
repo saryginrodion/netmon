@@ -1,9 +1,12 @@
 import argparse
 import asyncio
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 import structlog
+import yaml
+
+from netmon.cmd.netmon_collector.configuration_model import NetmonConfig
 from netmon.util.setup_logging import setup_logging
 
 _DEFAULT_CONFIG_NAME = "netmon.yaml"
@@ -42,7 +45,16 @@ async def main() -> None:
     args = parser.parse_args()
 
     if args.genconfig:
-        return generate_default_config()
+        generate_default_config()
+        return
+
+    logger.info("parsing config", config_path=args.config)
+
+    with open(args.config, "r") as f:
+        config_dict = yaml.safe_load(f)
+
+    config = NetmonConfig.model_validate(config_dict)  # type: ignore
+    logger.info("config parsed successfully", config=config)
 
 
 if __name__ == "__main__":
