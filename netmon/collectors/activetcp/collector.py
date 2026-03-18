@@ -97,9 +97,9 @@ class ActiveTCPCollector(MetricsCollector):
 
         sent_from_at = datetime.fromtimestamp(packet["sent_at"])
 
-        latency_from_server = now - sent_from_at
-        latency_to_server = sent_from_at - sent_to_at
-        rtt = latency_from_server + latency_to_server
+        rtt = now - sent_from_at
+        latency_from_server = rtt / 2
+        latency_to_server = rtt / 2
 
         log.debug("calculated metrics", rtt=rtt, latency_from_server=latency_from_server, latency_to_server=latency_to_server)
 
