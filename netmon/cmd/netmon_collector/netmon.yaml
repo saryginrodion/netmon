@@ -1,0 +1,19 @@
+# All durations / intervals / delays is timedelta.
+
+# Interval of collection and storing metrics
+collect_interval: 2s
+
+# File to store metrics in (JSON)
+storage:
+  file_path: ./metrics.json
+
+# Collectors. Can be multiple collectors of one kind - to test many servers at one run
+collectors:
+  - kind: activetcp
+    addr: 127.0.0.1
+    port: 8001
+    packet_send_delay: 0.1
+  - kind: activeudp
+    addr: 127.0.0.1
+    port: 8002
+    packet_send_delay: 0.05

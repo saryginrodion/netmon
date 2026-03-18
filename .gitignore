@@ -1,3 +1,5 @@
+./netmon.yaml
+
 .env
 
 *.o
