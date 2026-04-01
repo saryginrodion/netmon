@@ -3,9 +3,11 @@ import asyncio
 
 import structlog
 from netmon.collectors.activetcp.collector_server import ActiveTCPServer
+from netmon.util.setup_logging import setup_logging
 
 
 async def main() -> None:
+    setup_logging()
     logger = structlog.get_logger()
 
     parser = argparse.ArgumentParser(description="Active TCP Collector server")

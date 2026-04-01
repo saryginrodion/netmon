@@ -1,3 +1,6 @@
+/netmon.yaml
+/metrics.json
+
 .env
 
 *.o

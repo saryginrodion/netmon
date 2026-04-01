@@ -24,6 +24,7 @@ class ActiveUDPCollector(MetricsCollector):
         metrics_interval: timedelta,
         packet_send_delay: timedelta = timedelta(seconds=5),
         read_timeout: timedelta = timedelta(seconds=10),
+        origin_name: str = "ActiveUDPCollector",
     ) -> None:
 
         self._logger = logger
@@ -32,6 +33,7 @@ class ActiveUDPCollector(MetricsCollector):
         self._port = port
         self._packet_send_delay = packet_send_delay
         self._read_timeout = read_timeout
+        self._origin_name = origin_name
 
         self._stop_event = asyncio.Event()
         self._is_running = False
@@ -58,7 +60,7 @@ class ActiveUDPCollector(MetricsCollector):
 
         return [
             BaseMetricEntry(
-                origin=self.__class__.__name__,
+                origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
                 destinatation=self._addr,
                 rtt=rtt,
@@ -100,11 +102,11 @@ class ActiveUDPCollector(MetricsCollector):
             log.warning("sent_to timestamp not found")
             return
 
-        sent_from_at = datetime.fromtimestamp(packet["sent_at"])
+        # sent_from_at = datetime.fromtimestamp(packet["sent_at"])
 
-        latency_from_server = now - sent_from_at
-        latency_to_server = sent_from_at - sent_to_at
-        rtt = latency_from_server + latency_to_server
+        rtt = now - sent_to_at
+        latency_from_server = rtt / 2
+        latency_to_server = rtt / 2
 
         log.debug(
             "calculated metrics",

@@ -25,6 +25,7 @@ class ActiveTCPCollector(MetricsCollector):
         reconnect_interval: timedelta = timedelta(seconds=15),
         read_timeout: timedelta = timedelta(seconds=10),
         write_timeout: timedelta = timedelta(seconds=10),
+        origin_name: str = "ActiveTCPCollector",
     ) -> None:
         self._logger = logger
         self._metrics_interval = metrics_interval
@@ -34,6 +35,7 @@ class ActiveTCPCollector(MetricsCollector):
         self._packet_send_delay = packet_send_delay
         self._read_timeout = read_timeout
         self._write_timeout = write_timeout
+        self._origin_name = origin_name
 
         self._stop_event = asyncio.Event()
         self._is_running = False
@@ -56,7 +58,7 @@ class ActiveTCPCollector(MetricsCollector):
 
         return [
             BaseMetricEntry(
-                origin=self.__class__.__name__,
+                origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
                 destinatation=self._addr,
                 rtt=rtt,
@@ -93,11 +95,11 @@ class ActiveTCPCollector(MetricsCollector):
             log.warning("sent_to timestamp not found")
             return
 
-        sent_from_at = datetime.fromtimestamp(packet["sent_at"])
+        # sent_from_at = datetime.fromtimestamp(packet["sent_at"])
 
-        latency_from_server = now - sent_from_at
-        latency_to_server = sent_from_at - sent_to_at
-        rtt = latency_from_server + latency_to_server
+        rtt = now - sent_to_at
+        latency_from_server = rtt / 2
+        latency_to_server = rtt / 2
 
         log.debug("calculated metrics", rtt=rtt, latency_from_server=latency_from_server, latency_to_server=latency_to_server)
 
