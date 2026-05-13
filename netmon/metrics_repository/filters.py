@@ -9,7 +9,7 @@ class MetricFilters(BaseModel):
 
 
 class LastInterval(BaseModel):
-    interval: float = Field(ge=1.0, le=60.0 * 30.0)
+    seconds: float = Field(ge=1.0, le=60.0 * 30.0)
 
 
 class HistoryInterval(BaseModel):

@@ -13,6 +13,7 @@ from netmon.api.dependencies.ids import COLLECTORS_MANAGER, METRIC_QUERIER
 from netmon.api.dependencies.registry import DI_REGISTRY
 from netmon.cmd.netmon_collector.collectors_setup import setup_collectors
 from netmon.cmd.netmon_collector.configuration_model import NetmonConfig
+from netmon.cmd.netmon_collector.querier_setup import querier_setup
 from netmon.cmd.netmon_collector.saver_setup import saver_setup
 from netmon.collectors.manager import CollectorsManager
 from netmon.util.setup_logging import setup_logging
@@ -45,6 +46,7 @@ def must_load_config(logger: structlog.BoundLogger, config_path: str) -> NetmonC
 
     return NetmonConfig.model_validate(config_dict)  # type: ignore
 
+
 def main() -> None:
     setup_logging()
     logger = structlog.get_logger()
@@ -70,22 +72,26 @@ def main() -> None:
     async def lifespan(app: FastAPI):
         collectors = await setup_collectors(config)
         saver = await saver_setup(config.storage)
+        querier = await querier_setup(config.storage)
         manager = CollectorsManager(
-                logger=logger.bind(scope="CollectorsManager"),
-                collectors=collectors,
-                metric_saver=saver,
-                collection_interval=config.collect_interval,
+            logger=logger.bind(scope="CollectorsManager"),
+            collectors=collectors,
+            metric_saver=saver,
+            collection_interval=config.collect_interval,
         )
         manager.start_collection()
-        DI_REGISTRY.register(COLLECTORS_MANAGER, manager)
-        yield
 
+        DI_REGISTRY.register(COLLECTORS_MANAGER, manager)
+        DI_REGISTRY.register(METRIC_QUERIER, querier)
+
+        yield
 
     app = FastAPI(title="Netmon API", lifespan=lifespan)
 
     initialize_app(app)
 
     uvicorn.run(app, host="0.0.0.0", port=config.api.port)
+
 
 if __name__ == "__main__":
     main()
