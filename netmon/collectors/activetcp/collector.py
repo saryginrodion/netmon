@@ -60,7 +60,7 @@ class ActiveTCPCollector(MetricsCollector):
             BaseMetricEntry(
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
-                destinatation=self._addr,
+                destination=self._addr,
                 rtt=rtt,
                 latency_from=latency_from_server,
                 latency_to=latency_to_server,

@@ -15,7 +15,7 @@ def add_metric_value_to_point(prefix: str, val: MetricValue, point: Point) -> Po
 def from_metric_entry_to_point(ent: BaseMetricEntry) -> Point:
     point = Point("metrics") \
         .tag("origin", ent.origin) \
-        .field("dst_ip", ent.destinatation) \
+        .field("dst_ip", ent.destination) \
         .time(datetime.fromtimestamp(ent.timestamp, tz=timezone.utc))
 
     if ent.packet_loss:

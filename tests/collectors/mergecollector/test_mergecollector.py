@@ -15,7 +15,7 @@ from netmon.entities.metricvalue import MetricValue
         BaseMetricEntry(
             origin="TestCollector1",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.1.1.1",
+            destination="1.1.1.1",
             rtt=MetricValue(130, 1, 99, 5),
             latency_from=MetricValue(100, 1, 94, 2),
             latency_to=MetricValue(101, 1, 99, 4),
@@ -24,7 +24,7 @@ from netmon.entities.metricvalue import MetricValue
         BaseMetricEntry(
             origin="TestCollector1",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.1.1.1",
+            destination="1.1.1.1",
             rtt=MetricValue(138, 2, 39, 5),
             latency_from=MetricValue(140, 1, 94, 1),
             latency_to=MetricValue(111, 1, 39, 3),
@@ -33,7 +33,7 @@ from netmon.entities.metricvalue import MetricValue
         BaseMetricEntry(
             origin="TestCollector2",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.224.1.222",
+            destination="1.224.1.222",
             rtt=MetricValue(120, 4, 99, 5),
             latency_from=MetricValue(130, 1, 94, 2),
             latency_to=MetricValue(121, 1, 99, 4),
@@ -65,7 +65,7 @@ async def test_merge_collector_correct(
         BaseMetricEntry(
             origin="TestCollector1",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.1.1.1",
+            destination="1.1.1.1",
             rtt=MetricValue(130, 1, 99, 5),
             latency_from=MetricValue(100, 1, 94, 2),
             latency_to=MetricValue(101, 1, 99, 4),
@@ -74,7 +74,7 @@ async def test_merge_collector_correct(
         BaseMetricEntry(
             origin="TestCollector1",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.1.1.1",
+            destination="1.1.1.1",
             rtt=MetricValue(138, 2, 39, 5),
             latency_from=MetricValue(140, 1, 94, 1),
             latency_to=MetricValue(111, 1, 39, 3),
@@ -83,7 +83,7 @@ async def test_merge_collector_correct(
         BaseMetricEntry(
             origin="TestCollector2",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.224.1.222",
+            destination="1.224.1.222",
             rtt=MetricValue(120, 4, 99, 5),
             latency_from=MetricValue(130, 1, 94, 2),
             latency_to=MetricValue(121, 1, 99, 4),
@@ -119,7 +119,7 @@ async def test_merge_collector_handled_error(
         BaseMetricEntry(
             origin="TestCollector1",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.1.1.1",
+            destination="1.1.1.1",
             rtt=MetricValue(130, 1, 99, 5),
             latency_from=MetricValue(100, 1, 94, 2),
             latency_to=MetricValue(101, 1, 99, 4),
@@ -128,7 +128,7 @@ async def test_merge_collector_handled_error(
         BaseMetricEntry(
             origin="TestCollector1",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.1.1.1",
+            destination="1.1.1.1",
             rtt=MetricValue(138, 2, 39, 5),
             latency_from=MetricValue(140, 1, 94, 1),
             latency_to=MetricValue(111, 1, 39, 3),
@@ -137,7 +137,7 @@ async def test_merge_collector_handled_error(
         BaseMetricEntry(
             origin="TestCollector2",
             timestamp=datetime.now().timestamp(),
-            destinatation="1.224.1.222",
+            destination="1.224.1.222",
             rtt=MetricValue(120, 4, 99, 5),
             latency_from=MetricValue(130, 1, 94, 2),
             latency_to=MetricValue(121, 1, 99, 4),

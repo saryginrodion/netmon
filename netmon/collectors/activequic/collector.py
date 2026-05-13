@@ -58,7 +58,7 @@ class ActiveQUICCollector(MetricsCollector):
             BaseMetricEntry(
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
-                destinatation=self._addr,
+                destination=self._addr,
                 rtt=rtt,
                 packet_loss=self._packet_loss(),
                 latency_from=latency,
