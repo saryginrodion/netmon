@@ -1,16 +1,20 @@
 import argparse
-import asyncio
-from datetime import datetime
+from contextlib import asynccontextmanager
 import shutil
 from pathlib import Path
 
+from fastapi import FastAPI
 import structlog
+import uvicorn
 import yaml
 
+from netmon.api.app import initialize_app
+from netmon.api.dependencies.ids import COLLECTORS_MANAGER, METRIC_QUERIER
+from netmon.api.dependencies.registry import DI_REGISTRY
 from netmon.cmd.netmon_collector.collectors_setup import setup_collectors
 from netmon.cmd.netmon_collector.configuration_model import NetmonConfig
 from netmon.cmd.netmon_collector.saver_setup import saver_setup
-from netmon.collectors.mergecollector.collector import MergeCollector
+from netmon.collectors.manager import CollectorsManager
 from netmon.util.setup_logging import setup_logging
 
 _DEFAULT_CONFIG_NAME = "netmon.yaml"
@@ -33,7 +37,15 @@ def generate_default_config():
         logger.error("Failed to copy netmon.yaml", error=str(e))
 
 
-async def main() -> None:
+def must_load_config(logger: structlog.BoundLogger, config_path: str) -> NetmonConfig:
+    logger.info("parsing config", config_path=config_path)
+
+    with open(config_path, "r") as f:
+        config_dict = yaml.safe_load(f)
+
+    return NetmonConfig.model_validate(config_dict)  # type: ignore
+
+def main() -> None:
     setup_logging()
     logger = structlog.get_logger()
 
@@ -52,31 +64,28 @@ async def main() -> None:
         generate_default_config()
         return
 
-    logger.info("parsing config", config_path=args.config)
+    config = must_load_config(logger, args.config)
 
-    with open(args.config, "r") as f:
-        config_dict = yaml.safe_load(f)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        collectors = await setup_collectors(config)
+        saver = await saver_setup(config.storage)
+        manager = CollectorsManager(
+                logger=logger.bind(scope="CollectorsManager"),
+                collectors=collectors,
+                metric_saver=saver,
+                collection_interval=config.collect_interval,
+        )
+        manager.start_collection()
+        DI_REGISTRY.register(COLLECTORS_MANAGER, manager)
+        yield
 
-    config = NetmonConfig.model_validate(config_dict)  # type: ignore
-    logger.info("config parsed")
 
-    collectors = await setup_collectors(config)
-    merge_collector = MergeCollector(logger.bind(scope="MergeCollector"), collectors)
-    logger.info("collectors setup")
+    app = FastAPI(title="Netmon API", lifespan=lifespan)
 
-    saver = await saver_setup(config.storage)
-    logger.info("metrics saver setup")
+    initialize_app(app)
 
-    # TODO: Change to running MetricsAggregator
-    while True:
-        try:
-            metrics = list(await merge_collector.collect(datetime.now()))
-            await saver.save_metrics(metrics)
-            logger.info("collected metrics", entries_count=len(metrics))
-            await asyncio.sleep(config.collect_interval.total_seconds())
-        except Exception as e:
-            logger.exception("exception in collect and save loop", error=str(e))
-
+    uvicorn.run(app, host="0.0.0.0", port=config.api.port)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

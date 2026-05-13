@@ -9,7 +9,13 @@ class StorageConfig(BaseModel):
     file_path: Path
 
 
+class APIConfig(BaseModel):
+    port: int
+
+
 class NetmonConfig(BaseModel):
+    api: APIConfig
+
     collect_interval: timedelta
 
     storage: StorageConfig
