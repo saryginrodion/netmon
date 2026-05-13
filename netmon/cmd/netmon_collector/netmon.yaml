@@ -21,3 +21,8 @@ collectors:
     addr: 127.0.0.1
     port: 8002
     packet_send_delay: 0.05
+  - type: activequic
+    origin_name: localhost_activequic
+    addr: 127.0.0.1
+    port: 8003
+    packet_send_delay: 0.2

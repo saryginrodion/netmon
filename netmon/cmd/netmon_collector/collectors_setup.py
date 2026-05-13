@@ -1,9 +1,11 @@
 import structlog
-from netmon.cmd.netmon_collector.collector_configuration_models import ActiveTCPConfig, ActiveUDPConfig
+from netmon.cmd.netmon_collector.collector_configuration_models import ActiveTCPConfig, ActiveUDPConfig, ActiveQUICConfig
 from netmon.cmd.netmon_collector.configuration_model import NetmonConfig
 from netmon.collectors.activetcp.collector import ActiveTCPCollector
 from netmon.collectors.activeudp.collector import ActiveUDPCollector
 from netmon.collectors.interface import MetricsCollector
+from netmon.collectors.activequic.collector import ActiveQUICCollector
+
 
 
 async def _active_tcp_setup(conf: ActiveTCPConfig, netmon_conf: NetmonConfig) -> ActiveTCPCollector:
@@ -41,10 +43,33 @@ async def _active_udp_setup(conf: ActiveUDPConfig, netmon_conf: NetmonConfig) ->
     await collector.start_collector()
     return collector
 
+async def _active_quic_setup(
+    conf: ActiveQUICConfig,
+    netmon_conf: NetmonConfig
+):
+    logger = structlog.get_logger().bind(
+        scope=conf.type,
+        addr=conf.addr,
+        port=conf.port
+    )
+
+    collector = ActiveQUICCollector(
+        logger=logger,
+        addr=str(conf.addr),
+        port=conf.port,
+        metrics_interval=netmon_conf.collect_interval,
+        packet_send_delay=conf.packet_send_delay,
+        origin_name=conf.origin_name
+    )
+
+    await collector.start_collector()
+
+    return collector
 
 _REGISTRY = {
     "activetcp": _active_tcp_setup,
     "activeudp": _active_udp_setup,
+    "activequic": _active_quic_setup,
 }
 
 
