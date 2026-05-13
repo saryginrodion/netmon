@@ -1,8 +1,15 @@
+import structlog
 from netmon.cmd.netmon_collector.configuration_model import StorageConfig
+from netmon.influxdb3.conn import connect
+from netmon.metrics_repository.influxdb3.saver import Influxdb3MetricsSaver
 from netmon.metrics_repository.interface import MetricsSaver
-from netmon.metrics_repository.json_saver import JSONMetricsSaver
 
 
 async def saver_setup(conf: StorageConfig) -> MetricsSaver:
-    saver = JSONMetricsSaver(conf.file_path)
+    logger = structlog.get_logger().bind(scope="Influxdb3MetricSaver", host=conf.host, database=conf.database)
+    saver = Influxdb3MetricsSaver(
+        logger,
+        connect(conf.host, conf.database, conf.token),
+    )
+
     return saver

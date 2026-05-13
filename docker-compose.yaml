@@ -17,6 +17,20 @@ services:
       - influxdb3-data:/var/lib/influxdb3/data
       - influxdb3-plugins:/var/lib/influxdb3/plugins
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    profiles:
+      - grafana
+
 volumes:
   influxdb3-data:
   influxdb3-plugins:
+  grafana-data:

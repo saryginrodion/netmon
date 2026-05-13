@@ -5,9 +5,11 @@ api:
 # Interval of collection and storing metrics
 collect_interval: 2
 
-# File to store metrics in (JSON)
+# Influxdb3 credentials
 storage:
-  file_path: ./metrics.json
+  host: http://0.0.0.0:8181
+  database: db-1
+  token: PASTE_YOUR_SECRET_TOKEN_HERE
 
 # Collectors. Can be multiple collectors of one kind - to test many servers at one run
 collectors:
