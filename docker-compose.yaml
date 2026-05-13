@@ -1,0 +1,22 @@
+services:
+  influxdb3-core:
+    container_name: influxdb3-core
+    user: "0:0"
+    image: influxdb:3-core
+    ports:
+      - 8181:8181
+    command:
+      - influxdb3
+      - serve
+      - --node-id=node0
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3/data
+      - --plugin-dir=/var/lib/influxdb3/plugins
+
+    volumes:
+      - influxdb3-data:/var/lib/influxdb3/data
+      - influxdb3-plugins:/var/lib/influxdb3/plugins
+
+volumes:
+  influxdb3-data:
+  influxdb3-plugins:
