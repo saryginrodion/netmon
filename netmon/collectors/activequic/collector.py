@@ -36,6 +36,7 @@ class ActiveQUICCollector(MetricsCollector):
         self._sent_packet = InMemoryStorage[datetime]()
         self._rtt = InMemoryStorage[float]()
 
+
     def _packet_loss(self):
         sent = {k for k, _ in self._sent_packet.items()}
         recv = {k for k, _ in self._rtt.items()}
@@ -50,6 +51,9 @@ class ActiveQUICCollector(MetricsCollector):
         rtt = MetricValue()
         rtt.add_all(list(self._rtt.values()))
 
+        latency = MetricValue()
+        latency.add_all(list(map(lambda x: x / 2, self._rtt.values())))
+
         return [
             BaseMetricEntry(
                 origin=self._origin_name,
@@ -57,6 +61,8 @@ class ActiveQUICCollector(MetricsCollector):
                 destinatation=self._addr,
                 rtt=rtt,
                 packet_loss=self._packet_loss(),
+                latency_from=latency,
+                latency_to=latency,
             )
         ]
 

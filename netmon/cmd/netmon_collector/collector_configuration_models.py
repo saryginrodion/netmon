@@ -1,7 +1,16 @@
 from datetime import timedelta
 from typing import Annotated, Literal, Union
 from pydantic import BaseModel, Field, IPvAnyAddress
-from ipaddress import IPvAnyAddress
+
+
+class ActiveQUICConfig(BaseModel):
+    type: Literal["activequic"]
+
+    addr: IPvAnyAddress
+    port: int = Field(gt=0, lt=65535)
+
+    packet_send_delay: timedelta = timedelta(seconds=1)
+    origin_name: str = "activequic"
 
 
 class ActiveTCPConfig(BaseModel):
@@ -30,12 +39,3 @@ CollectorConfig = Annotated[
     Union[ActiveTCPConfig, ActiveUDPConfig, ActiveQUICConfig],
     Field(discriminator="type"),
 ]
-
-class ActiveQUICConfig(BaseModel):
-    type: Literal["activequic"]
-
-    addr: IPvAnyAddress
-    port: int = Field(gt=0, lt=65535)
-
-    packet_send_delay: timedelta = timedelta(seconds=1)
-    origin_name: str = "activequic"
