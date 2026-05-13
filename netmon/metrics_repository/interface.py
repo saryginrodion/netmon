@@ -1,9 +1,9 @@
 from abc import abstractmethod
 from collections.abc import Iterable
-from datetime import datetime
 from typing import Protocol
 
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.metrics_repository.filters import HistoryInterval, LastInterval, MetricFilters
 
 
 class MetricsSaver(Protocol):
@@ -14,5 +14,9 @@ class MetricsSaver(Protocol):
 
 class MetricQuerier(Protocol):
     @abstractmethod
-    async def metrics_in_interval(self, interval_start: datetime, interval_stop: datetime) -> Iterable[BaseMetricEntry]:
-        """Получить список метрик за выбранный период."""
+    async def last_metrics(self, filters: MetricFilters, interval: LastInterval) -> Iterable[BaseMetricEntry]:
+        """Получить список метрик за последнее время."""
+
+    @abstractmethod
+    async def history_metrics(self, filters: MetricFilters, interval: HistoryInterval) -> Iterable[BaseMetricEntry]:
+        """Получить список метрик за определенное время."""
