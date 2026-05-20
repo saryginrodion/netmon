@@ -2,7 +2,8 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Iterable
 from structlog.stdlib import BoundLogger
-from netmon.collectors.errors import CollectionError
+from netmon.collectors.errors import CollectionError, CollectorNotFound
+from netmon.collectors.info import CollectorInfo
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
 from netmon.metrics_repository.interface import MetricsSaver
@@ -11,18 +12,31 @@ from netmon.util.async_error_suppressor import async_suppress_exceptions
 
 class CollectorsManager:
     """Manages and runs collectors."""
+
     def __init__(
-            self,
-            logger: BoundLogger,
-            collectors: list[MetricsCollector],
-            metric_saver: MetricsSaver,
-            collection_interval: timedelta,
-        ) -> None:
+        self,
+        logger: BoundLogger,
+        collectors: list[MetricsCollector],
+        metric_saver: MetricsSaver,
+        collection_interval: timedelta,
+    ) -> None:
         self.__logger = logger
         self.__collectors = collectors
         self.__metric_saver = metric_saver
         self.__collection_inteval = collection_interval
 
+    async def set_collector_active(self, name: str, is_active: bool):
+        """Изменить статус коллектора."""
+        for collector in self.__collectors:
+            if (await collector.info()).name == name:
+                await collector.set_active(is_active)
+                return
+
+        raise CollectorNotFound()
+
+    async def collectors(self) -> list[CollectorInfo]:
+        """Получить информацию о всех коллекторах."""
+        return [await col.info() for col in self.__collectors]
 
     async def collect(self) -> Iterable[BaseMetricEntry]:
         """Собирает с нескольких коллекторов все метрики.
