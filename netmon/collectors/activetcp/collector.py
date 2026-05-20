@@ -10,6 +10,7 @@ from structlog.stdlib import BoundLogger
 from netmon.collectors.activetcp.message import TCPMessage
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 from netmon.in_memory_storage.storage import InMemoryStorage
 
@@ -61,10 +62,13 @@ class ActiveTCPCollector(MetricsCollector):
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
                 destination=self._addr,
-                rtt=rtt,
-                latency_from=latency_from_server,
-                latency_to=latency_to_server,
-                packet_loss=self._packet_loss(),
+                metrics={
+                    MetricName.rtt: rtt,
+                    MetricName.jitter: rtt.maximum - rtt.minimum,
+                    MetricName.packet_loss: self._packet_loss(),
+                    MetricName.latency_from: latency_from_server,
+                    MetricName.latency_to: latency_to_server,
+                },
             )
         ]
 
