@@ -1,7 +1,5 @@
-from contextlib import asynccontextmanager
 from .errors.handlers import register_exception_handlers
-from .routers import metrics
-from .routers import settings
+from .routers import metrics, settings
 from fastapi import FastAPI
 
 
