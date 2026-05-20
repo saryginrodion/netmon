@@ -1,7 +1,7 @@
 from datetime import timedelta
 from pydantic import BaseModel, ConfigDict
 
-from netmon.cmd.netmon_collector.collector_configuration_models import CollectorConfig
+from netmon.config.collector_configuration_models import CollectorConfig
 
 
 class StorageConfig(BaseModel):

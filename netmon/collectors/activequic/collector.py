@@ -7,14 +7,16 @@ from typing import override
 from aioquic.asyncio.client import connect
 from structlog.stdlib import BoundLogger
 
+from netmon.collectors.collector_status import CollectorStatus
+from netmon.collectors.info import CollectorInfo
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 from netmon.in_memory_storage.storage import InMemoryStorage
 
 
 class ActiveQUICCollector(MetricsCollector):
-
     def __init__(
         self,
         logger: BoundLogger,
@@ -32,10 +34,11 @@ class ActiveQUICCollector(MetricsCollector):
         self._origin_name = origin_name
 
         self._stop_event = asyncio.Event()
+        self._is_running = False
+        self._last_error: str | None = None
 
         self._sent_packet = InMemoryStorage[datetime]()
         self._rtt = InMemoryStorage[float]()
-
 
     def _packet_loss(self):
         sent = {k for k, _ in self._sent_packet.items()}
@@ -47,6 +50,33 @@ class ActiveQUICCollector(MetricsCollector):
         return len(sent - recv) / len(sent)
 
     @override
+    async def info(self) -> CollectorInfo:
+        status = CollectorStatus.active
+
+        if self._last_error is not None:
+            status = CollectorStatus.failed
+
+        status = CollectorStatus.active if self._is_running else CollectorStatus.stopped
+
+        return CollectorInfo(
+            name=self._origin_name,
+            status=status,
+        )
+
+    @override
+    async def set_active(self, is_active: bool):
+        if self._is_running and is_active:
+            return
+
+        if not self._is_running and not is_active:
+            return
+
+        if is_active:
+            await self.start_collector()
+        else:
+            await self.stop()
+
+    @override
     async def collect(self, time: datetime) -> Iterable[BaseMetricEntry]:
         rtt = MetricValue()
         rtt.add_all(list(self._rtt.values()))
@@ -54,31 +84,31 @@ class ActiveQUICCollector(MetricsCollector):
         latency = MetricValue()
         latency.add_all(list(map(lambda x: x / 2, self._rtt.values())))
 
+        metrics: dict[MetricName, MetricValue | float] = {
+            MetricName.rtt: rtt,
+            MetricName.latency_to: latency,
+            MetricName.latency_from: latency,
+            MetricName.packet_loss: self._packet_loss(),
+            MetricName.jitter: rtt.maximum - rtt.minimum,
+        }
+
         return [
             BaseMetricEntry(
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
-                destinatation=self._addr,
-                rtt=rtt,
-                packet_loss=self._packet_loss(),
-                latency_from=latency,
-                latency_to=latency,
+                destination=self._addr,
+                metrics=metrics,
             )
         ]
 
     async def probe_loop(self):
         while not self._stop_event.is_set():
-
             packet_id = str(uuid4())
             started = datetime.now()
 
             try:
-                async with connect(
-                    self._addr,
-                    self._port,
-                    verify_mode=False
-                ) as client:
-
+                self._last_error = None
+                async with connect(self._addr, self._port, verify_mode=False) as client:
                     stream_id = client._quic.get_next_available_stream_id()
 
                     writer = client._quic.get_stream_writer(stream_id)
@@ -86,28 +116,23 @@ class ActiveQUICCollector(MetricsCollector):
                     writer.write(packet_id.encode())
                     await writer.drain()
 
-                    data = await asyncio.wait_for(
-                        client._quic.wait_connected(),
-                        timeout=5
-                    )
+                    data = await asyncio.wait_for(client._quic.wait_connected(), timeout=5)
 
-                    rtt = (datetime.now() - started).total_seconds()*1000
+                    rtt = (datetime.now() - started).total_seconds() * 1000
 
                     self._sent_packet.add(packet_id, started)
                     self._rtt.add(packet_id, rtt)
 
             except Exception as e:
-                self._logger.warning(
-                    "quic probe failed",
-                    error=str(e)
-                )
+                self._last_error = f"failed attempt: {e}"
+                self._logger.warning("quic probe failed", error=str(e))
 
-            await asyncio.sleep(
-                self._packet_send_delay.total_seconds()
-            )
+            await asyncio.sleep(self._packet_send_delay.total_seconds())
 
     async def start_collector(self):
+        self._is_running = True
         asyncio.create_task(self.probe_loop())
 
     async def stop(self):
         self._stop_event.set()
+        self._is_running = False

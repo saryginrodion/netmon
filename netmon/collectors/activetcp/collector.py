@@ -8,8 +8,11 @@ import msgpack
 from structlog.stdlib import BoundLogger
 
 from netmon.collectors.activetcp.message import TCPMessage
+from netmon.collectors.collector_status import CollectorStatus
+from netmon.collectors.info import CollectorInfo
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 from netmon.in_memory_storage.storage import InMemoryStorage
 
@@ -39,11 +42,39 @@ class ActiveTCPCollector(MetricsCollector):
 
         self._stop_event = asyncio.Event()
         self._is_running = False
+        self._last_error: str | None = None
 
         self._sent_packet = InMemoryStorage[datetime]()
         self._latency_to_server = InMemoryStorage[float]()
         self._latency_from_server = InMemoryStorage[float]()
         self._rtt = InMemoryStorage[float]()
+
+    @override
+    async def info(self) -> CollectorInfo:
+        status = CollectorStatus.active
+
+        if self._last_error is not None:
+            status = CollectorStatus.failed
+
+        status = CollectorStatus.active if self._is_running else CollectorStatus.stopped
+
+        return CollectorInfo(
+            name=self._origin_name,
+            status=status,
+        )
+
+    @override
+    async def set_active(self, is_active: bool):
+        if self._is_running and is_active:
+            return
+
+        if not self._is_running and not is_active:
+            return
+
+        if is_active:
+            await self.start_collector()
+        else:
+            await self.stop()
 
     @override
     async def collect(self, time: datetime) -> Iterable[BaseMetricEntry]:
@@ -60,11 +91,14 @@ class ActiveTCPCollector(MetricsCollector):
             BaseMetricEntry(
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
-                destinatation=self._addr,
-                rtt=rtt,
-                latency_from=latency_from_server,
-                latency_to=latency_to_server,
-                packet_loss=self._packet_loss(),
+                destination=self._addr,
+                metrics={
+                    MetricName.rtt: rtt,
+                    MetricName.jitter: rtt.maximum - rtt.minimum,
+                    MetricName.packet_loss: self._packet_loss(),
+                    MetricName.latency_from: latency_from_server,
+                    MetricName.latency_to: latency_to_server,
+                },
             )
         ]
 
@@ -184,8 +218,10 @@ class ActiveTCPCollector(MetricsCollector):
         self._is_running = True
         while self._is_running:
             try:
+                self._last_error = None
                 await self._run_one_connection()
             except Exception as e:
+                self._last_error = f"failed attempt: {e}"
                 log.warning("Connection attempt failed", error=str(e))
                 await asyncio.sleep(self._reconnect_delay.total_seconds())
 
@@ -195,3 +231,4 @@ class ActiveTCPCollector(MetricsCollector):
     async def stop(self) -> None:
         self._stop_event.set()
         self._is_running = False
+        self._last_error = None

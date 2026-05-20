@@ -11,10 +11,10 @@ import yaml
 from netmon.api.app import initialize_app
 from netmon.api.dependencies.ids import COLLECTORS_MANAGER, METRIC_QUERIER
 from netmon.api.dependencies.registry import DI_REGISTRY
-from netmon.cmd.netmon_collector.collectors_setup import setup_collectors
-from netmon.cmd.netmon_collector.configuration_model import NetmonConfig
-from netmon.cmd.netmon_collector.querier_setup import querier_setup
-from netmon.cmd.netmon_collector.saver_setup import saver_setup
+from netmon.config.collectors_setup import setup_collectors
+from netmon.config.configuration_model import NetmonConfig
+from netmon.config.querier_setup import querier_setup
+from netmon.config.saver_setup import saver_setup
 from netmon.collectors.manager import CollectorsManager
 from netmon.util.setup_logging import setup_logging
 

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 
 
@@ -11,10 +12,7 @@ class BaseMetricEntry:
     """Источник (название коллектора), с которого пришла метрика."""
     timestamp: float
     """POSIX timestamp в секундах"""
-    destinatation: str
+    destination: str
     """IP сервера, запросы к которому измерялись"""
 
-    rtt: MetricValue | None
-    latency_from: MetricValue | None
-    latency_to: MetricValue | None
-    packet_loss: float | None
+    metrics: dict[MetricName, MetricValue | float]

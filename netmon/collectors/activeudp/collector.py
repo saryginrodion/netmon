@@ -9,8 +9,11 @@ from uuid import uuid4
 import msgpack
 from structlog.stdlib import BoundLogger
 
+from netmon.collectors.collector_status import CollectorStatus
+from netmon.collectors.info import CollectorInfo
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 from netmon.in_memory_storage.storage import InMemoryStorage
 
@@ -24,9 +27,11 @@ class ActiveUDPCollector(MetricsCollector):
         metrics_interval: timedelta,
         packet_send_delay: timedelta = timedelta(seconds=5),
         read_timeout: timedelta = timedelta(seconds=10),
+        reconnect_interval: timedelta = timedelta(seconds=5),
         origin_name: str = "ActiveUDPCollector",
     ) -> None:
 
+        self._reconnect_interval = reconnect_interval
         self._logger = logger
         self._metrics_interval = metrics_interval
         self._addr = addr
@@ -37,6 +42,7 @@ class ActiveUDPCollector(MetricsCollector):
 
         self._stop_event = asyncio.Event()
         self._is_running = False
+        self._last_error: str | None = None
 
         self._sock: socket.socket | None = None
 
@@ -46,6 +52,33 @@ class ActiveUDPCollector(MetricsCollector):
         self._rtt = InMemoryStorage[float]()
 
     # ----------------------------------------------------------------
+
+    @override
+    async def info(self) -> CollectorInfo:
+        status = CollectorStatus.active
+
+        if self._last_error is not None:
+            status = CollectorStatus.failed
+
+        status = CollectorStatus.active if self._is_running else CollectorStatus.stopped
+
+        return CollectorInfo(
+            name=self._origin_name,
+            status=status,
+        )
+
+    @override
+    async def set_active(self, is_active: bool):
+        if self._is_running and is_active:
+            return
+
+        if not self._is_running and not is_active:
+            return
+
+        if is_active:
+            await self.start_collector()
+        else:
+            await self.stop()
 
     @override
     async def collect(self, time: datetime) -> Iterable[BaseMetricEntry]:
@@ -62,11 +95,14 @@ class ActiveUDPCollector(MetricsCollector):
             BaseMetricEntry(
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
-                destinatation=self._addr,
-                rtt=rtt,
-                latency_from=latency_from_server,
-                latency_to=latency_to_server,
-                packet_loss=self._packet_loss(),
+                destination=self._addr,
+                metrics={
+                    MetricName.rtt: rtt,
+                    MetricName.jitter: rtt.maximum - rtt.minimum,
+                    MetricName.latency_to: latency_to_server,
+                    MetricName.latency_from: latency_from_server,
+                    MetricName.packet_loss: self._packet_loss(),
+                },
             )
         ]
 
@@ -191,6 +227,8 @@ class ActiveUDPCollector(MetricsCollector):
 
         try:
             await asyncio.gather(send_task, recv_task)
+        except:
+            raise
         finally:
             send_task.cancel()
             recv_task.cancel()
@@ -203,7 +241,13 @@ class ActiveUDPCollector(MetricsCollector):
         self._is_running = True
 
         while self._is_running:
-            await self._run()
+            try:
+                self._last_error = None
+                await self._run()
+            except Exception as e:
+                self._last_error = f"failed attempt: {e}"
+                self._logger.warning("Connection attempt failed", error=str(e))
+                await asyncio.sleep(self._reconnect_interval.total_seconds())
 
     # ----------------------------------------------------------------
 
@@ -215,3 +259,4 @@ class ActiveUDPCollector(MetricsCollector):
     async def stop(self) -> None:
         self._stop_event.set()
         self._is_running = False
+        self._last_error = None
