@@ -1,9 +1,15 @@
+import structlog
 from netmon.cmd.netmon_collector.configuration_model import StorageConfig
-from netmon.metrics_repository.dummy.querier import DummyMetricQuerier
+from netmon.influxdb3.conn import connect
+from netmon.metrics_repository.influxdb3.querier import Influxdb3MetricQuerier
 from netmon.metrics_repository.interface import MetricQuerier
 
 
 async def querier_setup(conf: StorageConfig) -> MetricQuerier:
-    saver = DummyMetricQuerier()
+    logger = structlog.get_logger().bind(scope="Influxdb3MetricQuerier", host=conf.host, database=conf.database)
+    querier = Influxdb3MetricQuerier(
+        logger,
+        connect(conf.host, conf.database, conf.token),
+    )
 
-    return saver
+    return querier

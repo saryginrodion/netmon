@@ -11,7 +11,7 @@ class BaseMetricEntry:
     """Источник (название коллектора), с которого пришла метрика."""
     timestamp: float
     """POSIX timestamp в секундах"""
-    destinatation: str
+    destination: str
     """IP сервера, запросы к которому измерялись"""
 
     rtt: MetricValue | None
