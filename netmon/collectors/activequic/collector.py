@@ -9,6 +9,7 @@ from structlog.stdlib import BoundLogger
 
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 from netmon.in_memory_storage.storage import InMemoryStorage
 
@@ -54,15 +55,20 @@ class ActiveQUICCollector(MetricsCollector):
         latency = MetricValue()
         latency.add_all(list(map(lambda x: x / 2, self._rtt.values())))
 
+        metrics: dict[MetricName, MetricValue | float] = {
+                MetricName.rtt: rtt,
+                MetricName.latency_to: latency,
+                MetricName.latency_from: latency,
+                MetricName.packet_loss: self._packet_loss(),
+                MetricName.jitter: rtt.maximum - rtt.minimum,
+        }
+
         return [
             BaseMetricEntry(
                 origin=self._origin_name,
                 timestamp=datetime.now().timestamp(),
                 destination=self._addr,
-                rtt=rtt,
-                packet_loss=self._packet_loss(),
-                latency_from=latency,
-                latency_to=latency,
+                metrics=metrics,
             )
         ]
 

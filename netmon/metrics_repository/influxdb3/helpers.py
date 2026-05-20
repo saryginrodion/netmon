@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 from typing import Any
 from influxdb_client_3 import Point
 from netmon.entities.base_metric_entry import BaseMetricEntry
+from netmon.entities.metric_name_enum import MetricName
 from netmon.entities.metricvalue import MetricValue
 
+__NAME_SPLITTER = "__"
 
 def add_metric_value_to_point(prefix: str, val: MetricValue, point: Point) -> Point:
     return point \
@@ -19,21 +21,19 @@ def from_metric_entry_to_point(ent: BaseMetricEntry) -> Point:
         .field("dst_ip", ent.destination) \
         .time(datetime.fromtimestamp(ent.timestamp, tz=timezone.utc))
 
-    if ent.packet_loss:
-        point = point.field("pck_loss", float(ent.packet_loss))
-
-    if ent.rtt:
-        point = add_metric_value_to_point("rtt__", ent.rtt, point)
-
-    if ent.latency_from:
-        point = add_metric_value_to_point("lat_from__", ent.latency_from, point)
-
-    if ent.latency_to:
-        point = add_metric_value_to_point("lat_to__", ent.latency_to, point)
+    for k, v in ent.metrics.items():
+        if isinstance(v, MetricValue):
+            point = add_metric_value_to_point(k.name + __NAME_SPLITTER, v, point)
+        else:
+            point = point.field(k.name, float(v))
 
     return point
 
-def metric_value_from_record(prefix: str, record: dict[str, Any]) -> MetricValue | None:
+def metric_value_from_record(name: str, record: dict[str, Any]) -> MetricValue | float | None:
+    if record.get(name) is not None:
+        return record.get(name)
+
+    prefix = name + __NAME_SPLITTER
     acc = record.get(f"{prefix}acc")
     agg = record.get(f"{prefix}agg")
 
@@ -56,17 +56,19 @@ def from_influx_record_to_metric_entry(record: dict[str, Any]) -> BaseMetricEntr
     else:
         timestamp = datetime.fromisoformat(str(timestamp_raw)).timestamp()
 
+    metrics: dict[MetricName, MetricValue | float] = dict()
+
+    for metric_name in MetricName:
+        val = metric_value_from_record(metric_name.name, record)
+        if val is None:
+            continue
+
+        metrics[metric_name] = val
+
     return BaseMetricEntry(
         origin=str(record["origin"]),
         timestamp=timestamp,
         destination=str(record["dst_ip"]),
-        rtt=metric_value_from_record("rtt__", record),
-        latency_from=metric_value_from_record("lat_from__", record),
-        latency_to=metric_value_from_record("lat_to__", record),
-        packet_loss=(
-            float(record["pck_loss"])
-            if record.get("pck_loss") is not None
-            else None
-        ),
+        metrics=metrics,
     )
 
