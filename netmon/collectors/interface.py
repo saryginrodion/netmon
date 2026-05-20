@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from datetime import datetime
 
-from netmon.collectors.collector_status import CollectorStatus
+from netmon.collectors.info import CollectorInfo
 from netmon.entities.base_metric_entry import BaseMetricEntry
 
 
@@ -14,8 +14,8 @@ class MetricsCollector(ABC):
         """Собрать метрики за момент времени `time`."""
 
     @abstractmethod
-    async def status(self) -> CollectorStatus:
-        """Вернуть статус коллектора сейчас."""
+    async def info(self) -> CollectorInfo:
+        """Вернуть текущую информацию о коллекторе."""
 
 
     @abstractmethod
