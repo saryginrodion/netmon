@@ -1,5 +1,5 @@
 import structlog
-from netmon.cmd.netmon_collector.configuration_model import StorageConfig
+from netmon.config.configuration_model import StorageConfig
 from netmon.influxdb3.conn import connect
 from netmon.metrics_repository.influxdb3.querier import Influxdb3MetricQuerier
 from netmon.metrics_repository.interface import MetricQuerier
