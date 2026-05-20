@@ -9,6 +9,7 @@ from structlog.stdlib import BoundLogger
 
 from netmon.collectors.activetcp.message import TCPMessage
 from netmon.collectors.collector_status import CollectorStatus
+from netmon.collectors.info import CollectorInfo
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
 from netmon.entities.metric_name_enum import MetricName
@@ -49,11 +50,18 @@ class ActiveTCPCollector(MetricsCollector):
         self._rtt = InMemoryStorage[float]()
 
     @override
-    async def status(self) -> CollectorStatus:
-        if self._last_error is not None:
-            return CollectorStatus.failed
+    async def info(self) -> CollectorInfo:
+        status = CollectorStatus.active
 
-        return CollectorStatus.active if self._is_running else CollectorStatus.stopped
+        if self._last_error is not None:
+            status = CollectorStatus.failed
+
+        status = CollectorStatus.active if self._is_running else CollectorStatus.stopped
+
+        return CollectorInfo(
+            name=self._origin_name,
+            status=status,
+        )
 
     @override
     async def set_active(self, is_active: bool):
