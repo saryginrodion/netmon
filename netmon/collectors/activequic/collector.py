@@ -7,6 +7,7 @@ from typing import override
 from aioquic.asyncio.client import connect
 from structlog.stdlib import BoundLogger
 
+from netmon.collectors.collector_status import CollectorStatus
 from netmon.collectors.interface import MetricsCollector
 from netmon.entities.base_metric_entry import BaseMetricEntry
 from netmon.entities.metric_name_enum import MetricName
@@ -33,6 +34,8 @@ class ActiveQUICCollector(MetricsCollector):
         self._origin_name = origin_name
 
         self._stop_event = asyncio.Event()
+        self._is_running = False
+        self._last_error: str | None = None
 
         self._sent_packet = InMemoryStorage[datetime]()
         self._rtt = InMemoryStorage[float]()
@@ -46,6 +49,26 @@ class ActiveQUICCollector(MetricsCollector):
             return 0
 
         return len(sent - recv) / len(sent)
+
+    @override
+    async def status(self) -> CollectorStatus:
+        if self._last_error is not None:
+            return CollectorStatus.failed
+
+        return CollectorStatus.active if self._is_running else CollectorStatus.stopped
+
+    @override
+    async def set_active(self, is_active: bool):
+        if self._is_running and is_active:
+            return
+
+        if not self._is_running and not is_active:
+            return
+
+        if is_active:
+            await self.start_collector()
+        else:
+            await self.stop()
 
     @override
     async def collect(self, time: datetime) -> Iterable[BaseMetricEntry]:
@@ -79,6 +102,7 @@ class ActiveQUICCollector(MetricsCollector):
             started = datetime.now()
 
             try:
+                self._last_error = None
                 async with connect(
                     self._addr,
                     self._port,
@@ -103,6 +127,7 @@ class ActiveQUICCollector(MetricsCollector):
                     self._rtt.add(packet_id, rtt)
 
             except Exception as e:
+                self._last_error = f"failed attempt: {e}"
                 self._logger.warning(
                     "quic probe failed",
                     error=str(e)
@@ -113,7 +138,9 @@ class ActiveQUICCollector(MetricsCollector):
             )
 
     async def start_collector(self):
+        self._is_running = True
         asyncio.create_task(self.probe_loop())
 
     async def stop(self):
         self._stop_event.set()
+        self._is_running = False
