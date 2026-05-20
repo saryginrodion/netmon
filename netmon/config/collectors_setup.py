@@ -37,6 +37,7 @@ async def _active_udp_setup(conf: ActiveUDPConfig, netmon_conf: NetmonConfig) ->
         packet_send_delay=conf.packet_send_delay,
         read_timeout=conf.read_timeout,
         origin_name=conf.origin_name,
+        reconnect_interval=conf.reconnect_interval,
     )
 
     await collector.start_collector()
