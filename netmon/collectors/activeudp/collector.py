@@ -237,8 +237,8 @@ class ActiveUDPCollector(MetricsCollector):
     # ----------------------------------------------------------------
 
     async def run_collector(self) -> None:
-
         self._is_running = True
+        self._stop_event.clear()
 
         while self._is_running:
             try:

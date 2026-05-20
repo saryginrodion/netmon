@@ -215,6 +215,7 @@ class ActiveTCPCollector(MetricsCollector):
     async def run_collector(self) -> None:
         """Создание подключения и запуск циклов отправки и приёма"""
         log = self._logger.bind(action="run_collector")
+        self._stop_event.clear()
         self._is_running = True
         while self._is_running:
             try:
